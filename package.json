@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-folder-limit",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Limits the number of visible files in folders and provides a show more button.",
 	"main": "main.js",
 	"type": "module",
