@@ -24,7 +24,7 @@ You can customize the maximum number of files shown per folder in the plugin set
 
 ## Installation
 
-### From the Community Plugins list (Coming Soon)
+### From the Community Plugins list
 1. Open Obsidian Settings.
 2. Go to **Community plugins** and ensure Safe mode is **off**.
 3. Click **Browse** and search for "Folder Limit".

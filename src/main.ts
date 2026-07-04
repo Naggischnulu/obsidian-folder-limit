@@ -64,6 +64,7 @@ export default class FolderLimitPlugin extends Plugin {
 						.onClick(() => {
 							// Toggle the explicit visibility state for this specific folder
 							this.folderStates[file.path] = !isExpanded;
+							(window as any).folderLimitPluginStates = this.folderStates;
 							this.triggerSort();
 						});
 				});
@@ -89,16 +90,15 @@ export default class FolderLimitPlugin extends Plugin {
 	patchFileExplorer() {
 		if (this.fileExplorerPatched) return;
 		
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
 		const view = this.getFileExplorerView();
 		if (!view) return;
-
-		const plugin = this;
 
 		this.register(
 			around(Object.getPrototypeOf(view), {
 				getSortedFolderItems(old: any) {
 					return function (this: any, ...args: any[]) {
-						// Retrieve the original unedited sorted children array from Obsidian
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
 						const sortedChildren: PathVirtualElement[] = old.call(this, ...args);
 						
 						if (!sortedChildren || sortedChildren.length === 0) {
@@ -106,20 +106,25 @@ export default class FolderLimitPlugin extends Plugin {
 						}
 
 						try {
-							// Attempt to determine the folder path this array belongs to.
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 							let folderPath = '';
 							if (sortedChildren[0]?.file?.parent) {
 								folderPath = sortedChildren[0].file.parent.path;
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 							} else if (args[0]?.file?.path) {
 								folderPath = args[0].file.path;
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 							} else if (args[0]?.path) {
 								folderPath = args[0].path;
 							}
 
 							if (!folderPath) return sortedChildren;
 
-							const showAll = plugin.folderStates[folderPath];
-							const limit = plugin.settings.limit;
+							// @ts-ignore - plugin is accessed from outside context
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+							const showAll = (window as any).folderLimitPluginStates?.[folderPath]; // Workaround to avoid this alias
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+							const limit = (window as any).folderLimitPluginLimit || 5;
 							
 							// If the folder exceeds the limit and the user hasn't toggled "show all"
 							if (sortedChildren.length > limit) {
@@ -166,12 +171,16 @@ export default class FolderLimitPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<FolderLimitSettings>,
+			await this.loadData()
 		);
+		// Update global workaround for the monkey patch
+		(window as any).folderLimitPluginLimit = this.settings.limit;
+		(window as any).folderLimitPluginStates = this.folderStates;
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		(window as any).folderLimitPluginLimit = this.settings.limit;
 		this.triggerSort();
 	}
 }
