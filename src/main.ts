@@ -175,12 +175,11 @@ export default class FolderLimitPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const savedData = await this.loadData();
+		const savedData = (await this.loadData()) as unknown;
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			savedData
+			savedData as Partial<FolderLimitSettings>
 		);
 		// Update global workaround for the monkey patch
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
