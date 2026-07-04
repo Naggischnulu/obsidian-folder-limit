@@ -64,7 +64,7 @@ export default class FolderLimitPlugin extends Plugin {
 						.onClick(() => {
 							// Toggle the explicit visibility state for this specific folder
 							this.folderStates[file.path] = !isExpanded;
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 							(window as unknown as { folderLimitPluginStates: Record<string, boolean> }).folderLimitPluginStates = this.folderStates;
 							this.triggerSort();
 						});
@@ -79,7 +79,7 @@ export default class FolderLimitPlugin extends Plugin {
 	getFileExplorerView() {
 		const leaves = this.app.workspace.getLeavesOfType('file-explorer');
 		if (leaves.length > 0) {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian API is untyped
 			return (leaves[0] as unknown as { view: unknown }).view;
 		}
 		return null;
@@ -92,16 +92,16 @@ export default class FolderLimitPlugin extends Plugin {
 	patchFileExplorer() {
 		if (this.fileExplorerPatched) return;
 		
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		const view = this.getFileExplorerView();
 		if (!view) return;
 
 		this.register(
 			around(Object.getPrototypeOf(view), {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- Obsidian API is untyped
 				getSortedFolderItems(old: Function) {
 					return function (this: unknown, ...args: unknown[]) {
-						// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+						// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian API is untyped
 						const sortedChildren: PathVirtualElement[] = old.call(this, ...args);
 						
 						if (!sortedChildren || sortedChildren.length === 0) {
@@ -109,7 +109,7 @@ export default class FolderLimitPlugin extends Plugin {
 						}
 
 						try {
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 							let folderPath = '';
 							const arg0 = args[0] as { file?: { path: string }, path?: string };
 							if (sortedChildren[0]?.file?.parent) {
@@ -123,11 +123,11 @@ export default class FolderLimitPlugin extends Plugin {
 							if (!folderPath) return sortedChildren;
 
 							// @ts-ignore - plugin is accessed from outside context
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian API is untyped
 							const windowAsAny = window as unknown as { folderLimitPluginStates?: Record<string, boolean>, folderLimitPluginLimit?: number };
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian API is untyped
 							const showAll = windowAsAny.folderLimitPluginStates?.[folderPath];
-							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian API is untyped
 							const limit = windowAsAny.folderLimitPluginLimit || 5;
 							
 							// If the folder exceeds the limit and the user hasn't toggled "show all"
@@ -165,11 +165,11 @@ export default class FolderLimitPlugin extends Plugin {
 	 * Triggers Obsidian to resort and redraw the file explorer tree.
 	 */
 	triggerSort() {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- Obsidian API is untyped
 		const view = this.getFileExplorerView() as { requestSort?: () => void };
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- Obsidian API is untyped
 		if (view && typeof view.requestSort === 'function') {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- Obsidian API is untyped
 			view.requestSort();
 		}
 	}
@@ -182,15 +182,15 @@ export default class FolderLimitPlugin extends Plugin {
 			savedData as Partial<FolderLimitSettings>
 		);
 		// Update global workaround for the monkey patch
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		(window as unknown as { folderLimitPluginLimit: number }).folderLimitPluginLimit = this.settings.limit;
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		(window as unknown as { folderLimitPluginStates: Record<string, boolean> }).folderLimitPluginStates = this.folderStates;
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		(window as unknown as { folderLimitPluginLimit: number }).folderLimitPluginLimit = this.settings.limit;
 		this.triggerSort();
 	}
