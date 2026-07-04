@@ -1,114 +1,177 @@
-import {
-	Editor,
-	MarkdownView,
-	MarkdownFileInfo,
-	Modal,
-	Notice,
-	Plugin,
-} from 'obsidian';
-import {
-	DEFAULT_SETTINGS,
-	MyPluginSettings,
-	SampleSettingTab,
-} from './settings';
+import { Plugin, TAbstractFile } from 'obsidian';
+import { around } from 'monkey-around';
+import { DEFAULT_SETTINGS, FolderLimitSettings, FolderLimitSettingTab } from './settings';
 
-// Remember to rename these classes and interfaces!
+/**
+ * Interface representing Obsidian's internal PathVirtualElement.
+ * This is used by the file explorer's virtual list renderer.
+ */
+interface PathVirtualElement {
+	file: TAbstractFile;
+	info?: {
+		hidden?: boolean;
+		[key: string]: any;
+	};
+	[key: string]: any;
+}
 
-export default class MyPlugin extends Plugin {
-	settings!: MyPluginSettings;
+export default class FolderLimitPlugin extends Plugin {
+	settings!: FolderLimitSettings;
+	// Tracks whether a user has explicitly chosen to "show all files" for a specific folder path.
+	folderStates: Record<string, boolean> = {}; 
+	fileExplorerPatched = false;
 
 	async onload() {
 		await this.loadSettings();
+		this.addSettingTab(new FolderLimitSettingTab(this.app, this));
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		this.app.workspace.onLayoutReady(() => {
+			this.patchFileExplorer();
+			this.triggerSort();
 		});
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+		this.registerContextMenu();
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			},
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (
-				editor: Editor,
-				_ctx: MarkdownView | MarkdownFileInfo,
-			) => {
-				editor.replaceSelection('Sample editor command');
-			},
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView =
-					this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(activeDocument, 'click', (_evt: MouseEvent) => {
-			new Notice('Click');
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(
-			window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000),
+		this.registerEvent(
+			this.app.workspace.on('layout-change', () => {
+				this.patchFileExplorer();
+			})
 		);
 	}
 
-	onunload() {}
+	onunload() {
+		// The patch is automatically removed because we used this.register(around(...))
+		// Trigger a sort so the file explorer redraws and unhides any previously limited files.
+		this.triggerSort();
+	}
+
+	/**
+	 * Registers a native context menu item on folders.
+	 * This completely avoids brittle DOM manipulation and MutationObservers.
+	 */
+	registerContextMenu() {
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu, file) => {
+				// We only add this toggle to folders
+				if (!file || !('children' in file)) return;
+				
+				const isExpanded = this.folderStates[file.path];
+				
+				menu.addItem((item) => {
+					item
+						.setTitle(isExpanded ? "Show less files" : "Show all files")
+						.setIcon(isExpanded ? "minimize" : "maximize")
+						.onClick(() => {
+							// Toggle the explicit visibility state for this specific folder
+							this.folderStates[file.path] = !isExpanded;
+							this.triggerSort();
+						});
+				});
+			})
+		);
+	}
+
+	/**
+	 * Retrieves the active File Explorer view instance.
+	 */
+	getFileExplorerView() {
+		const leaves = this.app.workspace.getLeavesOfType('file-explorer');
+		if (leaves.length > 0) {
+			return (leaves[0] as any).view;
+		}
+		return null;
+	}
+
+	/**
+	 * Safely patches the FileExplorerView to intercept file list sorting.
+	 * This prevents the virtual list scrolling glitch caused by simple CSS hiding.
+	 */
+	patchFileExplorer() {
+		if (this.fileExplorerPatched) return;
+		
+		const view = this.getFileExplorerView();
+		if (!view) return;
+
+		const plugin = this;
+
+		this.register(
+			around(Object.getPrototypeOf(view), {
+				getSortedFolderItems(old: any) {
+					return function (this: any, ...args: any[]) {
+						// Retrieve the original unedited sorted children array from Obsidian
+						const sortedChildren: PathVirtualElement[] = old.call(this, ...args);
+						
+						if (!sortedChildren || sortedChildren.length === 0) {
+							return sortedChildren;
+						}
+
+						try {
+							// Attempt to determine the folder path this array belongs to.
+							let folderPath = '';
+							if (sortedChildren[0]?.file?.parent) {
+								folderPath = sortedChildren[0].file.parent.path;
+							} else if (args[0]?.file?.path) {
+								folderPath = args[0].file.path;
+							} else if (args[0]?.path) {
+								folderPath = args[0].path;
+							}
+
+							if (!folderPath) return sortedChildren;
+
+							const showAll = plugin.folderStates[folderPath];
+							const limit = plugin.settings.limit;
+							
+							// If the folder exceeds the limit and the user hasn't toggled "show all"
+							if (sortedChildren.length > limit) {
+								const filtered = sortedChildren.filter((vEl: PathVirtualElement, index: number) => {
+									if (index >= limit && !showAll) {
+										// Tell Obsidian's virtual list renderer to skip this item entirely
+										if (vEl.info) vEl.info.hidden = true;
+										return false; 
+									}
+									// Ensure items are visible otherwise
+									if (vEl.info) vEl.info.hidden = false;
+									return true;
+								});
+								
+								return filtered;
+							} else {
+								return sortedChildren;
+							}
+						} catch (error) {
+							// Failsafe: if Obsidian changes its internal API structure, 
+							// we catch the error to prevent the file explorer from crashing.
+							console.warn("Folder Limit Plugin: Failed to process folder items", error);
+							return sortedChildren;
+						}
+					};
+				}
+			})
+		);
+
+		this.fileExplorerPatched = true;
+	}
+	
+	/**
+	 * Triggers Obsidian to resort and redraw the file explorer tree.
+	 */
+	triggerSort() {
+		const view = this.getFileExplorerView() as any;
+		if (view && typeof view.requestSort === 'function') {
+			view.requestSort();
+		}
+	}
 
 	async loadSettings() {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
+			(await this.loadData()) as Partial<FolderLimitSettings>,
 		);
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
+		this.triggerSort();
 	}
 }

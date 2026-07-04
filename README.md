@@ -1,92 +1,41 @@
-# Obsidian Sample Plugin
+# Obsidian Folder Limit
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A lightweight Obsidian plugin that helps you keep your file explorer clean by limiting the number of files visible in long folders.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+If you have folders with hundreds of files (like daily notes, attachments, or Zettelkasten folders), your file explorer can quickly become cluttered and difficult to navigate. This plugin allows you to set a maximum number of files to show per folder, hiding the rest until you need them.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+## Features
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
-
-## First time developing plugins?
-
-Quick starting guide for new plugin devs:
-
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+- **Limit Visible Files**: Set a global limit (e.g., 5 files) for how many files are shown in a folder.
+- **Native Context Menu**: Right-click on any folder to toggle between "Show all files" and "Show less files".
+- **Zero Scroll Glitches**: Deeply integrated into Obsidian's virtual list rendering to ensure your scrollbars remain accurate, completely avoiding the UI glitches caused by other CSS-hiding plugins.
+- **Highly Performant**: Operates without DOM mutation observers, ensuring your vault stays blazing fast even with thousands of files.
 
 ## How to use
 
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+1. Install and enable the plugin.
+2. By default, folders will only show the first 5 files.
+3. To view all files in a folder, simply **right-click** the folder in the file explorer and select **"Show all files"**.
+4. To collapse the folder back to the limit, right-click it again and select **"Show less files"**.
 
-## Manually installing the plugin
+## Settings
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+You can customize the maximum number of files shown per folder in the plugin settings under **Folder Limit**. Changing this value updates the file tree immediately.
 
-## Improve code quality with eslint
+## Installation
 
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+### From the Community Plugins list (Coming Soon)
+1. Open Obsidian Settings.
+2. Go to **Community plugins** and ensure Safe mode is **off**.
+3. Click **Browse** and search for "Folder Limit".
+4. Install and enable the plugin.
 
-## Funding URL
+### Manual Installation
+1. Download the `main.js`, `manifest.json`, and `styles.css` files from the latest [Release](https://github.com/Naggischnulu/obsidian-folder-limit/releases) on GitHub.
+2. Create a new folder named `folder-limit` inside your vault's `.obsidian/plugins/` directory.
+3. Place the downloaded files into that folder.
+4. Reload Obsidian and enable the plugin in the Community Plugins settings.
 
-You can include funding URLs where people who use your plugin can financially support it.
+## License
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
-```
-
-## API Documentation
-
-See https://docs.obsidian.md
+This project is licensed under the 0-BSD License.

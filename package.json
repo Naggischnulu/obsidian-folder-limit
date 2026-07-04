@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-folder-limit",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Limits the number of visible files in folders and provides a show more button.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -23,5 +23,8 @@
 		"obsidian": "latest",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.59.1"
+	},
+	"dependencies": {
+		"monkey-around": "^3.0.0"
 	}
 }

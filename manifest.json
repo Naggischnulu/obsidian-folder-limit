@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "folder-limit",
+	"name": "Folder Limit",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"description": "Limits the number of visible files in folders and provides a show more button.",
+	"author": "Naggischnulu",
+	"authorUrl": "",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }

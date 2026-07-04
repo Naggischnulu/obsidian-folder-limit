@@ -1,18 +1,18 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import FolderLimitPlugin from './main';
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface FolderLimitSettings {
+	limit: number;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
+export const DEFAULT_SETTINGS: FolderLimitSettings = {
+	limit: 5,
 };
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+export class FolderLimitSettingTab extends PluginSettingTab {
+	plugin: FolderLimitPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: FolderLimitPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -23,15 +23,20 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
+			.setName('File limit')
+			.setDesc('Number of files to show in a folder before hiding the rest.')
 			.addText((text) =>
 				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
+					.setPlaceholder('5')
+					.setValue(this.plugin.settings.limit.toString())
 					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
+						const limit = parseInt(value);
+						if (!isNaN(limit) && limit > 0) {
+							this.plugin.settings.limit = limit;
+							await this.plugin.saveSettings();
+							// Trigger a refresh of the file explorer view
+							this.plugin.triggerSort();
+						}
 					}),
 			);
 	}
