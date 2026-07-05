@@ -26,17 +26,34 @@ export default class FolderLimitPlugin extends Plugin {
 		this.addSettingTab(new FolderLimitSettingTab(this.app, this));
 
 		this.app.workspace.onLayoutReady(() => {
-			this.patchFileExplorer();
-			this.triggerSort();
+			this.initPatch();
 		});
 
 		this.registerContextMenu();
 
 		this.registerEvent(
 			this.app.workspace.on('layout-change', () => {
-				this.patchFileExplorer();
+				this.initPatch();
 			})
 		);
+
+		// Fallback for mobile: repeatedly try to patch the file explorer until it succeeds.
+		// Obsidian mobile often defers initialization of views.
+		const patchInterval = window.setInterval(() => {
+			if (this.fileExplorerPatched) {
+				window.clearInterval(patchInterval);
+			} else {
+				this.initPatch();
+			}
+		}, 1000);
+		this.registerInterval(patchInterval);
+	}
+
+	initPatch() {
+		if (this.fileExplorerPatched) return;
+		if (this.patchFileExplorer()) {
+			this.triggerSort();
+		}
 	}
 
 	onunload() {
@@ -88,16 +105,25 @@ export default class FolderLimitPlugin extends Plugin {
 	/**
 	 * Safely patches the FileExplorerView to intercept file list sorting.
 	 * This prevents the virtual list scrolling glitch caused by simple CSS hiding.
+	 * Returns true if successfully patched.
 	 */
-	patchFileExplorer() {
-		if (this.fileExplorerPatched) return;
+	patchFileExplorer(): boolean {
+		if (this.fileExplorerPatched) return true;
 		
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		const view = this.getFileExplorerView();
-		if (!view) return;
+		if (!view) return false;
+
+		// Ensure we are patching the real view prototype, not a mobile placeholder
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+		const proto = Object.getPrototypeOf(view);
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		if (typeof proto.getSortedFolderItems !== 'function') {
+			return false;
+		}
 
 		this.register(
-			around(Object.getPrototypeOf(view), {
+			around(proto, {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- Obsidian API is untyped
 				getSortedFolderItems(old: Function) {
 					return function (this: unknown, ...args: unknown[]) {
@@ -159,6 +185,7 @@ export default class FolderLimitPlugin extends Plugin {
 		);
 
 		this.fileExplorerPatched = true;
+		return true;
 	}
 	
 	/**
