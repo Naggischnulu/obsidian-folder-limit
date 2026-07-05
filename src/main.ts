@@ -115,9 +115,9 @@ export default class FolderLimitPlugin extends Plugin {
 		if (!view) return false;
 
 		// Ensure we are patching the real view prototype, not a mobile placeholder
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Obsidian API is untyped
 		const proto = Object.getPrototypeOf(view);
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Obsidian API is untyped
 		if (typeof proto.getSortedFolderItems !== 'function') {
 			return false;
 		}
